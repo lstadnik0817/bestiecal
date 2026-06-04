@@ -200,7 +200,7 @@ header {
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .day-num { font-size: 12px; font-weight: 600; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
-.event-pill { font-size: 12px; font-weight: 600; padding: 4px 6px; border-radius: 8px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; min-height: 28px; line-height: 1.2; }
+.event-pill { font-size: 11px; font-weight: 600; padding: 3px 6px; border-radius: 8px; margin: 2px auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 95%; box-sizing: border-box; color: inherit; min-height: 28px; line-height: 1.2; }
 .pill-dot { display: none; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
@@ -853,7 +853,6 @@ function renderMonth() {
   document.getElementById('monthTitle').textContent=MONTH_NAMES[viewMonth]+' '+viewYear;
   const grid=document.getElementById('calGrid');
   grid.innerHTML='';
-  console.log('renderMonth', MONTH_NAMES[viewMonth], viewYear, 'events', events.length, events);
   const firstDay=new Date(viewYear,viewMonth,1).getDay();
   const daysInMo=new Date(viewYear,viewMonth+1,0).getDate();
   const prevDays=new Date(viewYear,viewMonth,0).getDate();
@@ -873,29 +872,29 @@ function renderMonth() {
     div.onclick=()=>openAdd(ds);
     const num=document.createElement('div');
     num.className='day-num'; num.textContent=cell.d;
+
     const cellEvs = events.filter(e=>{
       const date = getEventDate(e);
       const s = getEventStart(e);
       const en = getEventEnd(e);
-      return date===ds || (s && en && s<en && ds>=s && ds<=en);
+      return date===ds || (s && en && ds>=s && ds<=en);
     }).sort((a,b)=>{
       const aStart = getEventStart(a); const bStart = getEventStart(b);
       if(aStart !== bStart) return aStart.localeCompare(bStart);
       return (a.time||'').localeCompare(b.time||'');
     });
 
-    // Append day number first so it stays at the top of the cell
     div.appendChild(num);
 
-    // Render unified event pills for both single-day and multi-day spans
     cellEvs.slice(0,3).forEach(ev=>{
       const date = getEventDate(ev);
       const s = getEventStart(ev);
       const en = getEventEnd(ev);
-      const isContinuation = !(date===ds) && s && en && s<en && ds>=s && ds<=en;
+      const isContinuation = date !== ds && s && en && ds>=s && ds<=en;
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
-      pill.className='event-pill' + (isContinuation ? ' continuation' : '');
+      pill.className='event-pill';
+      if(isContinuation) pill.classList.add('continuation');
       const [r,g,b]=hexToRgb(color);
       const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       pill.style.background = pastel;
@@ -904,6 +903,7 @@ function renderMonth() {
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
+
     if(cellEvs.length>3){
       const more=document.createElement('div');
       more.className='more-tag';
