@@ -858,6 +858,7 @@ function renderMonth() {
   document.getElementById('monthTitle').textContent=MONTH_NAMES[viewMonth]+' '+viewYear;
   const grid=document.getElementById('calGrid');
   grid.innerHTML='';
+  console.log('renderMonth', MONTH_NAMES[viewMonth], viewYear, 'events', events.length, events);
   const firstDay=new Date(viewYear,viewMonth,1).getDay();
   const daysInMo=new Date(viewYear,viewMonth+1,0).getDate();
   const prevDays=new Date(viewYear,viewMonth,0).getDate();
@@ -877,31 +878,38 @@ function renderMonth() {
     div.onclick=()=>openAdd(ds);
     const num=document.createElement('div');
     num.className='day-num'; num.textContent=cell.d;
-    const singleEvs = events.filter(e=>{
-      const s = getEventStart(e); const en = getEventEnd(e); return s===en && s===ds;
-    }).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+    const cellEvs = events.filter(e=>{
+      const s = getEventStart(e); const en = getEventEnd(e);
+      if(!s || !en) return false;
+      return (s===en && s===ds) || (s<en && ds>=s && ds<=en);
+    }).sort((a,b)=>{
+      const aStart = getEventStart(a); const bStart = getEventStart(b);
+      if(aStart !== bStart) return aStart.localeCompare(bStart);
+      return (a.time||'').localeCompare(b.time||'');
+    });
 
     // Append day number first so it stays at the top of the cell
     div.appendChild(num);
 
-    // Render single-day event pills
-    singleEvs.slice(0,3).forEach(ev=>{
+    // Render day event pills, including multi-day spans
+    cellEvs.slice(0,3).forEach(ev=>{
+      const s = getEventStart(ev); const en = getEventEnd(ev);
+      const isSpan = s < en;
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
-      pill.className='event-pill';
-      // pastel background (lighter tint) and colored text
+      pill.className='event-pill'+(isSpan && ds!==s ? ' continuation' : '');
       const [r,g,b]=hexToRgb(color);
       const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       pill.style.background = pastel;
       pill.style.color = color;
-      pill.textContent = ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
+      pill.textContent = ds===s ? ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '') : (ds===en ? ev.title : '•');
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
-    if(singleEvs.length>3){
+    if(cellEvs.length>3){
       const more=document.createElement('div');
       more.className='more-tag';
-      more.textContent=`+${singleEvs.length-3} more`;
+      more.textContent=`+${cellEvs.length-3} more`;
       more.onclick=e=>{e.stopPropagation();openDayEvents(ds);};
       div.appendChild(more);
     }
