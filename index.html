@@ -201,6 +201,12 @@ header {
 .pill-dot { display: none; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
+/* Multi-day event bar */
+.md-bar { height: 18px; display: flex; align-items: center; padding: 2px 6px; font-size: 11px; font-weight: 700; color: #fff; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-bottom: 6px; }
+.md-first { border-radius: 6px 0 0 6px; }
+.md-middle { border-radius: 0; }
+.md-last { border-radius: 0 6px 6px 0; }
+
 /* EVENT MODALS */
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.38); backdrop-filter: blur(5px); z-index: 500; align-items: flex-end; justify-content: center; }
 .modal-bg.open { display: flex; }
@@ -402,8 +408,12 @@ header {
       <label class="f-label">Title</label>
       <input class="f-input" type="text" id="evTitle" placeholder="What's happening?">
       <div class="row2">
-        <div><label class="f-label">Date</label><input class="f-input" type="date" id="evDate"></div>
+        <div><label class="f-label">Start Date</label><input class="f-input" type="date" id="evStartDate"></div>
+        <div><label class="f-label">End Date</label><input class="f-input" type="date" id="evEndDate"></div>
+      </div>
+      <div class="row2">
         <div><label class="f-label">Time</label><input class="f-input" type="time" id="evTime"></div>
+        <div></div>
       </div>
       <label class="f-label">Notes</label>
       <textarea class="f-textarea" id="evNotes" placeholder="Location, details…"></textarea>
@@ -796,7 +806,7 @@ function buildLegend() {
 function startLiveSync() {
   const syncDot=document.getElementById('syncDot');
   const syncText=document.getElementById('syncText');
-  const q=query(collection(db,'events'),orderBy('date'));
+  const q=query(collection(db,'events'));
   onSnapshot(q, snapshot=>{
     events=[];
     snapshot.forEach(d=>events.push({id:d.id,...d.data()}));
@@ -832,9 +842,37 @@ function renderMonth() {
     div.className='day-cell'+(cell.other?' other-month':'')+(isToday?' today':'');
     div.onclick=()=>openAdd(ds);
     const num=document.createElement('div');
-    num.className='day-num'; num.textContent=cell.d; div.appendChild(num);
-    const dayEvs=events.filter(e=>e.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    dayEvs.slice(0,3).forEach(ev=>{
+    num.className='day-num'; num.textContent=cell.d;
+
+    // Multi-day events that span this date (start !== end)
+    const multiEvs = events.filter(e=>{
+      const s = e.start||e.date; const en = e.end||e.date; return s<=ds && ds<=en && s!==en;
+    }).sort((a,b)=>(a.start||a.date).localeCompare(b.start||b.date));
+    // Single-day events for this exact date
+    const singleEvs = events.filter(e=>{
+      const s = e.start||e.date; const en = e.end||e.date; return s===en && s===ds;
+    }).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+
+    // Render multi-day bars at the top
+    multiEvs.forEach(ev=>{
+      const color=getPersonColor(ev.person);
+      const bar=document.createElement('div');
+      bar.className='md-bar';
+      const s = ev.start||ev.date; const en = ev.end||ev.date;
+      if (ds===s) bar.classList.add('md-first');
+      else if (ds===en) bar.classList.add('md-last');
+      else bar.classList.add('md-middle');
+      bar.style.background = color;
+      bar.textContent = ev.title;
+      bar.onclick = e=>{ e.stopPropagation(); openDetail(ev.id); };
+      div.appendChild(bar);
+    });
+
+    // Append day number after bars
+    div.appendChild(num);
+
+    // Render single-day event pills
+    singleEvs.slice(0,3).forEach(ev=>{
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
       pill.className='event-pill';
@@ -847,10 +885,10 @@ function renderMonth() {
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
-    if(dayEvs.length>3){
+    if(singleEvs.length>3){
       const more=document.createElement('div');
       more.className='more-tag';
-      more.textContent=`+${dayEvs.length-3} more`;
+      more.textContent=`+${singleEvs.length-3} more`;
       more.onclick=e=>{e.stopPropagation();openDayEvents(ds);};
       div.appendChild(more);
     }
@@ -865,7 +903,8 @@ window.openAdd=function(dateStr){
   editingId=null;
   document.getElementById('addModalTitle').textContent='Add Event';
   document.getElementById('evTitle').value='';
-  document.getElementById('evDate').value=dateStr||'';
+  document.getElementById('evStartDate').value=dateStr||'';
+  document.getElementById('evEndDate').value=dateStr||'';
   document.getElementById('evTime').value='';
   document.getElementById('evNotes').value='';
   const color=getPersonColor(meIdx);
@@ -881,10 +920,12 @@ window.closeAdd=function(){document.getElementById('addModal').classList.remove(
 
 window.saveEvent=async function(){
   const title=document.getElementById('evTitle').value.trim();
-  const date=document.getElementById('evDate').value;
+  const start=document.getElementById('evStartDate').value;
+  const end=document.getElementById('evEndDate').value;
   if(!title){showToast('Please add a title!');return;}
-  if(!date){showToast('Please pick a date!');return;}
-  const evData={title,date,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
+  if(!start||!end){showToast('Please pick start and end dates!');return;}
+  if(end<start){showToast('End date must be the same or after start date');return;}
+  const evData={title,start,end,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
   try{
     if(editingId){await updateDoc(doc(db,'events',editingId),evData);showToast('Updated ✓');}
     else{await addDoc(collection(db,'events'),evData);showToast('Event added ✓');}
@@ -902,9 +943,11 @@ window.openDetail=function(id){
   if(!ev)return;
   const color=getPersonColor(ev.person);
   const canEdit=ev.person===meIdx;
+  let start = ev.start||ev.date; let end = ev.end||ev.date;
   let html=`<div class="ev-color-strip" style="background:${color}"></div><div style="font-size:14px;line-height:1.75">`;
   html+=`<div class="ev-title-lg">${ev.title}</div>`;
-  html+=`<div>📅 <strong>${fmtDate(ev.date)}</strong>${ev.time?' at '+fmtTime(ev.time):''}</div>`;
+  if(start===end) html+=`<div>📅 <strong>${fmtDate(start)}</strong>${ev.time?' at '+fmtTime(ev.time):''}</div>`;
+  else html+=`<div>📅 <strong>${fmtDate(start)}</strong> — <strong>${fmtDate(end)}</strong>${ev.time?' at '+fmtTime(ev.time):''}</div>`;
   html+=`<div class="ev-author-chip" style="background:${lighten(color)};color:${color}"><span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block"></span>${NAMES[ev.person]}</div>`;
   if(ev.notes)html+=`<p style="margin-top:10px;color:#666;font-size:14px">${ev.notes.replace(/\n/g,'<br>')}</p>`;
   html+=`</div><div class="btn-row" style="margin-top:18px">
@@ -923,7 +966,8 @@ window.openEditModal=function(id){
   const color=getPersonColor(ev.person);
   document.getElementById('addModalTitle').textContent='Edit Event';
   document.getElementById('evTitle').value=ev.title;
-  document.getElementById('evDate').value=ev.date;
+  document.getElementById('evStartDate').value=ev.start||ev.date||'';
+  document.getElementById('evEndDate').value=ev.end||ev.date||'';
   document.getElementById('evTime').value=ev.time||'';
   document.getElementById('evNotes').value=ev.notes||'';
   const bar=document.getElementById('addingAsBar');
