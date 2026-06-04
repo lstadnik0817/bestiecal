@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#e8533a">
+<meta name="theme-color" content="#b07a8a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="BestieCal">
@@ -14,11 +14,13 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f7f5f2;
+  --bg: #f4eee1;
   --surface: #ffffff;
-  --border: #e5e0d8;
-  --text: #1c1917;
-  --muted: #8a8580;
+  --header: #efeeee;
+  --border: #e4dac2;
+  --text: #3a3530;
+  --muted: #999999;
+  --accent: #b07a8a;
   --radius: 13px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -33,8 +35,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   z-index: 9000; padding: calc(24px + var(--safe-top)) 20px calc(24px + var(--safe-bottom));
   overflow-y: auto;
 }
-.id-logo { font-family: 'DM Serif Display', serif; font-size: 30px; margin-bottom: 6px; }
-.id-logo span { color: #e8533a; }
+  .id-logo { font-family: 'DM Serif Display', serif; font-size: 30px; margin-bottom: 6px; }
+  .id-logo span { color: var(--accent); }
 .id-sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; text-align: center; }
 .id-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
 .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 360px; margin-bottom: 20px; }
@@ -142,7 +144,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   z-index: 9000; padding: 30px 20px;
 }
 .pin-logo { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 16px; }
-.pin-avatar { width: 60px; height: 60px; border-radius: 50%; font-size: 22px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; margin: 0 auto 12px; }
+  .pin-avatar { width: 60px; height: 60px; border-radius: 50%; font-size: 22px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; margin: 0 auto 12px; }
 .pin-title { font-size: 18px; font-weight: 600; margin-bottom: 4px; text-align: center; }
 .pin-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; text-align: center; }
 .pin-new-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
@@ -153,20 +155,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .pin-key { width: 70px; height: 70px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--surface); font-size: 22px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text); }
 .pin-key:active { background: var(--border); transform: scale(0.94); }
 .pin-key.empty { visibility: hidden; }
-.pin-error { color: #e8533a; font-size: 12px; font-weight: 600; margin-top: 14px; min-height: 18px; }
+.pin-error { color: var(--accent); font-size: 12px; font-weight: 600; margin-top: 14px; min-height: 18px; }
 
 /* ── MAIN APP ── */
 #app { display: none; padding-bottom: var(--safe-bottom); }
 
 header {
-  background: var(--surface); border-bottom: 1px solid var(--border);
+  background: var(--header); border-bottom: 1px solid var(--border);
   padding: calc(13px + var(--safe-top)) 18px 13px;
   display: flex; align-items: center; justify-content: space-between;
   position: sticky; top: 0; z-index: 100;
   box-shadow: 0 1px 10px rgba(0,0,0,.05);
 }
 .logo { font-family: 'DM Serif Display', serif; font-size: 20px; }
-.logo span { color: #e8533a; }
+.logo span { color: var(--accent); }
 .header-right { display: flex; align-items: center; gap: 9px; }
 .me-badge { display: flex; align-items: center; gap: 7px; padding: 6px 12px 6px 8px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 500; cursor: pointer; }
 .me-dot { width: 10px; height: 10px; border-radius: 50%; }
@@ -174,8 +176,8 @@ header {
 
 .sync-bar { display: flex; align-items: center; gap: 6px; padding: 6px 18px; font-size: 12px; font-weight: 500; }
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; }
-.sync-dot.live { background: #2a7d4f; animation: pulse 2s infinite; }
-.sync-dot.syncing { background: #c77c1a; }
+.sync-dot.live { background: var(--accent); animation: pulse 2s infinite; }
+.sync-dot.syncing { background: var(--muted); }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
 .nav-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px 6px; }
@@ -188,16 +190,17 @@ header {
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); font-weight: 500; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
 
-.cal-wrap { padding: 0 14px 30px; }
-.day-labels { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 3px; }
+.cal-wrap { padding: 0 14px 30px; width: 100vw; max-width: 100vw; box-sizing: border-box; position: relative; overflow: visible; }
+.day-labels { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 3px; margin-bottom: 3px; }
 .day-label { text-align: center; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 5px 0; }
-.grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
-.day-cell { background: #ffffff; border-radius: 9px; min-height: 95px; padding: 4px; border: 1px solid rgba(0,0,0,0.04); cursor: pointer; overflow: hidden; }
+.grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); grid-auto-rows: 70px; gap: 0; width: 100%; }
+.day-cell { background: #ffffff; border-radius: 9px; min-height: 70px; padding: 7px 6px 5px; border: 1px solid var(--border); cursor: pointer; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-start; margin-right: 3px; margin-bottom: 3px; }
+.day-cell:nth-child(7n) { margin-right: 0; }
 .day-cell:active { border-color: #bbb; }
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .day-num { font-size: 12px; font-weight: 600; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
-.event-pill { font-size: 10px; font-weight: 600; padding: 1px 3px; border-radius: 6px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; min-width: 8ch; }
+.event-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; }
 .pill-dot { display: none; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
@@ -221,7 +224,7 @@ header {
 .btn { flex: 1; padding: 13px; border-radius: 10px; border: none; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; }
 .btn-primary { background: var(--text); color: white; }
 .btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
-.btn-danger { background: #fde8e4; color: #e8533a; border: 1.5px solid #f8ccc6; }
+.btn-danger { background: #fde8e4; color: var(--accent); border: 1.5px solid var(--border); }
 .ev-color-strip { height: 4px; border-radius: 2px; margin-bottom: 14px; }
 .ev-title-lg { font-family: 'DM Serif Display', serif; font-size: 22px; margin-bottom: 10px; }
 .ev-author-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-top: 8px; }
@@ -356,7 +359,28 @@ header {
 <!-- MAIN APP -->
 <div id="app">
   <header>
-    <div class="logo">📅 <span>Bestie</span>Cal</div>
+    <div class="logo">
+      <!-- custom inline calendar SVG 28x28 -->
+      <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:6px;">
+        <!-- outer rounded rect -->
+        <rect x="1" y="1" width="26" height="26" rx="5" fill="#ffffff" stroke="#e4dac2"/>
+        <!-- dark header bar -->
+        <rect x="4" y="3" width="20" height="5" rx="1" fill="#3a3530" />
+        <!-- pink ring-hooks -->
+        <rect x="7" y="0.8" width="2" height="4" rx="1" fill="#c4a0aa" />
+        <rect x="19" y="0.8" width="2" height="4" rx="1" fill="#c4a0aa" />
+        <!-- grid of 6 small rounded squares -->
+        <!-- row 1 -->
+        <rect x="6" y="10" width="4" height="4" rx="1" fill="#c4a0aa" />
+        <rect x="12" y="10" width="4" height="4" rx="1" fill="#e4dac2" />
+        <rect x="18" y="10" width="4" height="4" rx="1" fill="#e4dac2" />
+        <!-- row 2 -->
+        <rect x="6" y="16" width="4" height="4" rx="1" fill="#e4dac2" />
+        <rect x="12" y="16" width="4" height="4" rx="1" fill="#e4dac2" />
+        <rect x="18" y="16" width="4" height="4" rx="1" fill="#e4dac2" />
+      </svg>
+      <span style="color:#c4a0aa">Bestie</span><span style="color:var(--text)">CaL</span>&nbsp;<span style="color:var(--text)">🤍</span>
+    </div>
     <div class="header-right">
       <div class="me-badge" id="meBadge" onclick="switchIdentity()">
         <div class="me-dot" id="meDot"></div>
@@ -402,8 +426,12 @@ header {
       <label class="f-label">Title</label>
       <input class="f-input" type="text" id="evTitle" placeholder="What's happening?">
       <div class="row2">
-        <div><label class="f-label">Date</label><input class="f-input" type="date" id="evDate"></div>
+        <div><label class="f-label">Start Date</label><input class="f-input" type="date" id="evStartDate"></div>
+        <div><label class="f-label">End Date</label><input class="f-input" type="date" id="evEndDate"></div>
+      </div>
+      <div class="row2">
         <div><label class="f-label">Time</label><input class="f-input" type="time" id="evTime"></div>
+        <div></div>
       </div>
       <label class="f-label">Notes</label>
       <textarea class="f-textarea" id="evNotes" placeholder="Location, details…"></textarea>
@@ -445,7 +473,7 @@ const db = getFirestore(app);
 // ── PEOPLE CONFIG ──
 const NAMES = ['Lily','Inna','Kristina','Solo'];
 const INITIALS = ['LI','IN','KR','SO'];
-const DEFAULT_COLORS = ['#e8533a','#c77c1a','#2a7d4f','#7c52d9'];
+const DEFAULT_COLORS = ['#b07a8a','#6a9e96','#5a82b8','#8a6ab8'];
 
 // Per-person color storage
 function getPersonColor(idx) {
@@ -459,6 +487,15 @@ function getAllColors() { return [0,1,2,3].map(i => getPersonColor(i)); }
 function hexToRgb(hex) {
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   return [r,g,b];
+}
+function getEventStart(ev){ return ev.startDate||ev.start||ev.date; }
+function getEventEnd(ev){ return ev.endDate||ev.end||ev.date||ev.start||ev.startDate; }
+function getEventDate(ev){ return ev.date||ev.startDate||ev.start; }
+function normalizeEvent(ev){
+  const start = getEventStart(ev);
+  const end = getEventEnd(ev);
+  const date = ev.date||ev.startDate||ev.start;
+  return { ...ev, startDate:start, endDate:end, start, end, date };
 }
 function colorDistance(h1, h2) {
   const [r1,g1,b1] = hexToRgb(h1), [r2,g2,b2] = hexToRgb(h2);
@@ -591,7 +628,7 @@ function rgbToHsl(r,g,b) {
   return [h*360,s*100,l*100];
 }
 
-const QUICK_COLORS = ['#e8533a','#e84393','#c77c1a','#e9c46a','#2a7d4f','#3a8db5','#7c52d9','#1a1a2e','#5c4033','#2d6a4f','#d62828','#f77f00','#023e8a','#6a994e','#9b2226','#457b9d','#6d6875','#264653'];
+const QUICK_COLORS = ['#b07a8a','#e84393','#c77c1a','#e9c46a','#2a7d4f','#3a8db5','#7c52d9','#1a1a2e','#5c4033','#2d6a4f','#d62828','#f77f00','#023e8a','#6a994e','#9b2226','#457b9d','#6d6875','#264653'];
 
 function buildSwatches() {
   const wrap = document.getElementById('cpSwatches');
@@ -796,10 +833,11 @@ function buildLegend() {
 function startLiveSync() {
   const syncDot=document.getElementById('syncDot');
   const syncText=document.getElementById('syncText');
-  const q=query(collection(db,'events'),orderBy('date'));
+  const q=query(collection(db,'events'));
   onSnapshot(q, snapshot=>{
     events=[];
-    snapshot.forEach(d=>events.push({id:d.id,...d.data()}));
+    snapshot.forEach(d=>events.push(normalizeEvent({id:d.id,...d.data()})));
+    console.log('Loaded events', events);
     syncDot.className='sync-dot live';
     syncText.textContent='Live • updates instantly';
     renderMonth(); buildLegend();
@@ -830,33 +868,54 @@ function renderMonth() {
     const isToday=!cell.other&&ry===today.getFullYear()&&rm===today.getMonth()&&cell.d===today.getDate();
     const div=document.createElement('div');
     div.className='day-cell'+(cell.other?' other-month':'')+(isToday?' today':'');
+    div.dataset.ds = ds;
     div.onclick=()=>openAdd(ds);
     const num=document.createElement('div');
-    num.className='day-num'; num.textContent=cell.d; div.appendChild(num);
-    const dayEvs=events.filter(e=>e.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
-    dayEvs.slice(0,3).forEach(ev=>{
+    num.className='day-num'; num.textContent=cell.d;
+
+    const cellEvs = events.filter(e=>{
+      const date = getEventDate(e);
+      const s = getEventStart(e);
+      const en = getEventEnd(e);
+      return date===ds || (s && en && ds>=s && ds<=en);
+    }).sort((a,b)=>{
+      const aStart = getEventStart(a); const bStart = getEventStart(b);
+      if(aStart !== bStart) return aStart.localeCompare(bStart);
+      return (a.time||'').localeCompare(b.time||'');
+    });
+
+    div.appendChild(num);
+
+    cellEvs.slice(0,3).forEach(ev=>{
+      const date = getEventDate(ev);
+      const s = getEventStart(ev);
+      const en = getEventEnd(ev);
+      const isContinuation = date !== ds && s && en && ds>=s && ds<=en;
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
       pill.className='event-pill';
-      // pastel background (lighter tint) and colored text
+      if(isContinuation) pill.classList.add('continuation');
       const [r,g,b]=hexToRgb(color);
       const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       pill.style.background = pastel;
       pill.style.color = color;
-      pill.textContent = ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
+      pill.textContent = isContinuation ? '' : ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
-    if(dayEvs.length>3){
+
+    if(cellEvs.length>3){
       const more=document.createElement('div');
       more.className='more-tag';
-      more.textContent=`+${dayEvs.length-3} more`;
+      more.textContent=`+${cellEvs.length-3} more`;
       more.onclick=e=>{e.stopPropagation();openDayEvents(ds);};
       div.appendChild(more);
     }
     grid.appendChild(div);
   });
 }
+
+
 
 window.changeMonth=function(d){viewMonth+=d;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}renderMonth();};
 window.goToday=function(){viewYear=today.getFullYear();viewMonth=today.getMonth();renderMonth();};
@@ -865,7 +924,8 @@ window.openAdd=function(dateStr){
   editingId=null;
   document.getElementById('addModalTitle').textContent='Add Event';
   document.getElementById('evTitle').value='';
-  document.getElementById('evDate').value=dateStr||'';
+  document.getElementById('evStartDate').value=dateStr||'';
+  document.getElementById('evEndDate').value=dateStr||'';
   document.getElementById('evTime').value='';
   document.getElementById('evNotes').value='';
   const color=getPersonColor(meIdx);
@@ -881,10 +941,12 @@ window.closeAdd=function(){document.getElementById('addModal').classList.remove(
 
 window.saveEvent=async function(){
   const title=document.getElementById('evTitle').value.trim();
-  const date=document.getElementById('evDate').value;
+  const start=document.getElementById('evStartDate').value;
+  const end=document.getElementById('evEndDate').value;
   if(!title){showToast('Please add a title!');return;}
-  if(!date){showToast('Please pick a date!');return;}
-  const evData={title,date,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
+  if(!start||!end){showToast('Please pick start and end dates!');return;}
+  if(end<start){showToast('End date must be the same or after start date');return;}
+  const evData={title,start,end,startDate:start,endDate:end,date:start,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
   try{
     if(editingId){await updateDoc(doc(db,'events',editingId),evData);showToast('Updated ✓');}
     else{await addDoc(collection(db,'events'),evData);showToast('Event added ✓');}
@@ -902,9 +964,11 @@ window.openDetail=function(id){
   if(!ev)return;
   const color=getPersonColor(ev.person);
   const canEdit=ev.person===meIdx;
+  let start = getEventStart(ev); let end = getEventEnd(ev);
   let html=`<div class="ev-color-strip" style="background:${color}"></div><div style="font-size:14px;line-height:1.75">`;
   html+=`<div class="ev-title-lg">${ev.title}</div>`;
-  html+=`<div>📅 <strong>${fmtDate(ev.date)}</strong>${ev.time?' at '+fmtTime(ev.time):''}</div>`;
+  if(start===end) html+=`<div>📅 <strong>${fmtDate(start)}</strong>${ev.time?' at '+fmtTime(ev.time):''}</div>`;
+  else html+=`<div>📅 <strong>${fmtDate(start)}</strong> — <strong>${fmtDate(end)}</strong>${ev.time?' at '+fmtTime(ev.time):''}</div>`;
   html+=`<div class="ev-author-chip" style="background:${lighten(color)};color:${color}"><span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block"></span>${NAMES[ev.person]}</div>`;
   if(ev.notes)html+=`<p style="margin-top:10px;color:#666;font-size:14px">${ev.notes.replace(/\n/g,'<br>')}</p>`;
   html+=`</div><div class="btn-row" style="margin-top:18px">
@@ -923,7 +987,8 @@ window.openEditModal=function(id){
   const color=getPersonColor(ev.person);
   document.getElementById('addModalTitle').textContent='Edit Event';
   document.getElementById('evTitle').value=ev.title;
-  document.getElementById('evDate').value=ev.date;
+  document.getElementById('evStartDate').value=getEventStart(ev)||'';
+  document.getElementById('evEndDate').value=getEventEnd(ev)||'';
   document.getElementById('evTime').value=ev.time||'';
   document.getElementById('evNotes').value=ev.notes||'';
   const bar=document.getElementById('addingAsBar');
