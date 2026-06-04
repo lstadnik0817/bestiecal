@@ -192,12 +192,12 @@ header {
 .day-labels { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 3px; }
 .day-label { text-align: center; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 5px 0; }
 .grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
-.day-cell { background: var(--surface); border-radius: 9px; min-height: 78px; padding: 7px 6px 5px; border: 1.5px solid transparent; cursor: pointer; overflow: hidden; }
+.day-cell { background: var(--surface); border-radius: 9px; min-height: 95px; padding: 7px 6px 5px; border: 1.5px solid transparent; cursor: pointer; overflow: hidden; }
 .day-cell:active { border-color: #bbb; }
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .day-num { font-size: 12px; font-weight: 600; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
-.event-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: flex; align-items: center; gap: 3px; }
+.event-pill { font-size: 8px; font-weight: 600; padding: 2px 6px; border-radius: 5px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: flex; align-items: center; gap: 3px; }
 .pill-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
@@ -390,6 +390,20 @@ header {
 </div>
 
 <!-- ADD/EDIT MODAL -->
+<div class="modal-bg" id="dayEventsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="dayEventsTitle">Events</div>
+      <button class="modal-close" onclick="closeDayEvents()">×</button>
+    </div>
+    <div class="modal-body" id="dayEventsBody"></div>
+    <div class="btn-row" style="padding: 0 20px 18px;">
+      <button class="btn btn-primary" style="width:100%;" onclick="openAddFromDay()">Add Event</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="addModal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -674,16 +688,27 @@ async function loadColorsFromFirebase() {
 }
 
 // ── PIN ──
+const REMEMBER_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 function hashPin(pin) { let h=0; for(let i=0;i<pin.length;i++)h=Math.imul(31,h)+pin.charCodeAt(i)|0; return h.toString(); }
 function getStoredPin(idx) { return localStorage.getItem(`bc_pin_${idx}`); }
 function setStoredPin(idx,pin) { localStorage.setItem(`bc_pin_${idx}`,hashPin(pin)); }
 function hasPin(idx) { return !!getStoredPin(idx); }
+function getRememberKey(idx) { return `bc_me_remember_${idx}`; }
+function getRememberExpiry(idx) { return parseInt(localStorage.getItem(getRememberKey(idx)) || '0', 10); }
+function setRememberExpiry(idx) { localStorage.setItem(getRememberKey(idx), String(Date.now() + REMEMBER_DURATION_MS)); }
+function isRemembered(idx) { return hasPin(idx) && Date.now() < getRememberExpiry(idx); }
 
 let pinBuffer='', pinMode='', pinConfirmBuffer='', isConfirming=false;
+let activeDayEventsDate = null;
 
 window.goToPinScreen = function() {
   if (meIdx===null) return;
   document.getElementById('identityScreen').style.display='none';
+  if (isRemembered(meIdx)) {
+    localStorage.setItem('bc_me', meIdx);
+    initApp();
+    return;
+  }
   showPinScreen();
 };
 
@@ -721,6 +746,7 @@ function handlePinComplete() {
     if (hashPin(pinBuffer)===getStoredPin(meIdx)) {
       document.getElementById('pinScreen').style.display='none';
       localStorage.setItem('bc_me', meIdx);
+      setRememberExpiry(meIdx);
       initApp();
     } else {
       document.getElementById('pinError').textContent='Incorrect PIN. Try again.';
@@ -736,6 +762,7 @@ function handlePinComplete() {
     } else {
       if (pinBuffer===pinConfirmBuffer) {
         setStoredPin(meIdx,pinBuffer);
+        setRememberExpiry(meIdx);
         document.getElementById('pinScreen').style.display='none';
         localStorage.setItem('bc_me',meIdx);
         initApp(); showToast('PIN set 🔒');
@@ -819,7 +846,7 @@ function renderMonth() {
     const isToday=!cell.other&&ry===today.getFullYear()&&rm===today.getMonth()&&cell.d===today.getDate();
     const div=document.createElement('div');
     div.className='day-cell'+(cell.other?' other-month':'')+(isToday?' today':'');
-    div.onclick=()=>openAdd(ds);
+    div.onclick=()=>openDayEvents(ds);
     const num=document.createElement('div');
     num.className='day-num'; num.textContent=cell.d; div.appendChild(num);
     const dayEvs=events.filter(e=>e.date===ds).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
@@ -837,7 +864,7 @@ function renderMonth() {
       const more=document.createElement('div');
       more.className='more-tag';
       more.textContent=`+${dayEvs.length-2} more`;
-      more.onclick=e=>{e.stopPropagation();openAdd(ds);};
+      more.onclick=e=>{e.stopPropagation();openDayEvents(ds);};
       div.appendChild(more);
     }
     grid.appendChild(div);
@@ -864,6 +891,34 @@ window.openAdd=function(dateStr){
   document.getElementById('addModal').classList.add('open');
 };
 window.closeAdd=function(){document.getElementById('addModal').classList.remove('open');};
+
+window.openDayEvents=function(dateStr){
+  activeDayEventsDate=dateStr;
+  document.getElementById('dayEventsTitle').textContent=`Events for ${fmtDate(dateStr)}`;
+  const body=document.getElementById('dayEventsBody');
+  const dayEvs=events.filter(e=>e.date===dateStr).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+  if(!dayEvs.length){
+    body.innerHTML=`<p style="margin:0;color:var(--muted);font-size:14px;line-height:1.6">No events yet. Tap Add Event to create one.</p>`;
+  } else {
+    body.innerHTML='';
+    dayEvs.forEach(ev=>{
+      const color=getPersonColor(ev.person);
+      const wrapper=document.createElement('div');
+      wrapper.style.marginBottom='14px';
+      wrapper.style.padding='14px';
+      wrapper.style.borderRadius='16px';
+      wrapper.style.background=lighten(color,0.9);
+      wrapper.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></span><div style="font-size:15px;font-weight:700;color:${color}">${ev.title}</div></div><div style="font-size:13px;color:${color};margin-bottom:8px">${ev.time?fmtTime(ev.time):'All day'}</div>${ev.notes?`<div style="font-size:13px;color:#5f5c56;white-space:pre-wrap;line-height:1.5">${ev.notes}</div>`:''}`;
+      body.appendChild(wrapper);
+    });
+  }
+  document.getElementById('dayEventsModal').classList.add('open');
+};
+window.closeDayEvents=function(){document.getElementById('dayEventsModal').classList.remove('open');};
+window.openAddFromDay=function(){
+  closeDayEvents();
+  openAdd(activeDayEventsDate);
+};
 
 window.saveEvent=async function(){
   const title=document.getElementById('evTitle').value.trim();
@@ -940,6 +995,7 @@ window.dismissInstall=function(){document.getElementById('installBanner').classL
 document.getElementById('addModal').addEventListener('click',function(e){if(e.target===this)closeAdd();});
 document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetail();});
 document.getElementById('colorPickerModal').addEventListener('click',function(e){if(e.target===this)closeColorPicker();});
+document.getElementById('dayEventsModal').addEventListener('click',function(e){if(e.target===this)closeDayEvents();});
 
 // ── INIT ──
 initIdCards();
@@ -948,7 +1004,11 @@ loadColorsFromFirebase().then(()=>initIdCards());
 if(savedMe!==null){
   meIdx=parseInt(savedMe);
   document.getElementById('identityScreen').style.display='none';
-  showPinScreen();
+  if (isRemembered(meIdx)) {
+    initApp();
+  } else {
+    showPinScreen();
+  }
 }
 </script>
 
