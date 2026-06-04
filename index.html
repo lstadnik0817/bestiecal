@@ -194,7 +194,7 @@ header {
 .day-labels { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; margin-bottom: 3px; }
 .day-label { text-align: center; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 5px 0; }
 .grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
-  .day-cell { background: #ffffff; border-radius: 9px; min-height: 70px; padding: 4px; border: 1px solid var(--border); cursor: pointer; overflow: hidden; }
+  .day-cell { background: #ffffff; border-radius: 9px; min-height: 70px; padding: 4px; border: 1px solid var(--border); cursor: pointer; overflow: visible; }
 .day-cell:active { border-color: #bbb; }
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
@@ -204,10 +204,10 @@ header {
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
 /* Multi-day event bar */
-.md-bar { height: 18px; display: flex; align-items: center; padding: 2px 6px; font-size: 11px; font-weight: 700; color: inherit; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 4px; margin-bottom: 4px; }
-.md-first { border-radius: 6px 6px 0 0; }
+.md-bar { height: 18px; display: flex; align-items: center; padding: 2px 8px; font-size: 11px; font-weight: 700; color: white; background: #3a3530; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; margin-bottom: 4px; width: calc(100% + 3px); margin-left: -1.5px; box-sizing: border-box; }
+.md-first { border-radius: 8px 0 0 8px; }
 .md-middle { border-radius: 0; }
-.md-last { border-radius: 0 0 6px 6px; }
+.md-last { border-radius: 0 8px 8px 0; }
 
 /* EVENT MODALS */
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.38); backdrop-filter: blur(5px); z-index: 500; align-items: flex-end; justify-content: center; }
@@ -879,20 +879,18 @@ function renderMonth() {
     // Append day number first so it stays at the top of the cell
     div.appendChild(num);
 
-    // Render multi-day bars below the date number
+    // Render multi-day event bars below the date number
     multiEvs.forEach(ev=>{
       const color=getPersonColor(ev.person);
-      const [r,g,b]=hexToRgb(color);
-      const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       const bar=document.createElement('div');
       bar.className='md-bar';
       const s = ev.start||ev.date; const en = ev.end||ev.date;
       if (ds===s) bar.classList.add('md-first');
       else if (ds===en) bar.classList.add('md-last');
       else bar.classList.add('md-middle');
-      bar.style.background = pastel;
-      bar.style.color = color;
-      bar.textContent = ev.title;
+      bar.style.background = color;
+      bar.style.color = 'white';
+      bar.textContent = ds===s ? ev.title : '';
       bar.onclick = e=>{ e.stopPropagation(); openDetail(ev.id); };
       div.appendChild(bar);
     });
