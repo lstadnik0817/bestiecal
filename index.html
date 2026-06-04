@@ -197,7 +197,7 @@ header {
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .day-num { font-size: 12px; font-weight: 600; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
-.event-pill { font-size: 10px; font-weight: 600; padding: 2px 3px; border-radius: 3px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: #ffffff; }
+.event-pill { font-size: 10px; font-weight: 600; padding: 1px 3px; border-radius: 6px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; min-width: 8ch; }
 .pill-dot { display: none; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
@@ -838,10 +838,11 @@ function renderMonth() {
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
       pill.className='event-pill';
-      // solid person color background with white text
-      pill.style.background = color;
-      pill.style.color = '#ffffff';
-      // ensure visible characters before truncation by using full width and small font
+      // pastel background (lighter tint) and colored text
+      const [r,g,b]=hexToRgb(color);
+      const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
+      pill.style.background = pastel;
+      pill.style.color = color;
       pill.textContent = ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
