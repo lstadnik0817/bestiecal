@@ -427,7 +427,6 @@ header {
       <input class="f-input" type="text" id="evTitle" placeholder="What's happening?">
       <div class="row2">
         <div><label class="f-label">Start Date</label><input class="f-input" type="date" id="evStartDate"></div>
-        <div><label class="f-label">End Date</label><input class="f-input" type="date" id="evEndDate"></div>
       </div>
       <div class="row2">
         <div><label class="f-label">Time</label><input class="f-input" type="time" id="evTime"></div>
@@ -925,7 +924,6 @@ window.openAdd=function(dateStr){
   document.getElementById('addModalTitle').textContent='Add Event';
   document.getElementById('evTitle').value='';
   document.getElementById('evStartDate').value=dateStr||'';
-  document.getElementById('evEndDate').value=dateStr||'';
   document.getElementById('evTime').value='';
   document.getElementById('evNotes').value='';
   const color=getPersonColor(meIdx);
@@ -942,11 +940,9 @@ window.closeAdd=function(){document.getElementById('addModal').classList.remove(
 window.saveEvent=async function(){
   const title=document.getElementById('evTitle').value.trim();
   const start=document.getElementById('evStartDate').value;
-  const end=document.getElementById('evEndDate').value;
   if(!title){showToast('Please add a title!');return;}
-  if(!start||!end){showToast('Please pick start and end dates!');return;}
-  if(end<start){showToast('End date must be the same or after start date');return;}
-  const evData={title,start,end,startDate:start,endDate:end,date:start,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
+  if(!start){showToast('Please pick a start date!');return;}
+  const evData={title,start,startDate:start,endDate:start,date:start,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
   try{
     if(editingId){await updateDoc(doc(db,'events',editingId),evData);showToast('Updated ✓');}
     else{await addDoc(collection(db,'events'),evData);showToast('Event added ✓');}
@@ -988,7 +984,6 @@ window.openEditModal=function(id){
   document.getElementById('addModalTitle').textContent='Edit Event';
   document.getElementById('evTitle').value=ev.title;
   document.getElementById('evStartDate').value=getEventStart(ev)||'';
-  document.getElementById('evEndDate').value=getEventEnd(ev)||'';
   document.getElementById('evTime').value=ev.time||'';
   document.getElementById('evNotes').value=ev.notes||'';
   const bar=document.getElementById('addingAsBar');
