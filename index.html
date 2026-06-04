@@ -200,23 +200,9 @@ header {
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .day-num { font-size: 12px; font-weight: 600; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
-.event-pill { font-size: 10px; font-weight: 600; padding: 4px 6px; border-radius: 6px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; }
-.event-pill.multi-day { padding: 6px 10px; min-height: 28px; display: flex; align-items: center; }
-.event-pill.multi-day.first { border-radius: 6px 0 0 6px; }
-.event-pill.multi-day.last { border-radius: 0 6px 6px 0; }
-.event-pill.multi-day.first.last { border-radius: 6px; }
-.event-pill.multi-day:not(.first):not(.last) { border-radius: 0; }
-.event-pill.multi-day:not(.first) { padding-left: 0; }
+.event-pill { font-size: 12px; font-weight: 600; padding: 4px 6px; border-radius: 8px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; min-height: 28px; line-height: 1.2; }
 .pill-dot { display: none; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
-
-/* Multi-day event bar */
-.md-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-.md-bar { position: absolute; display: flex; align-items: center; padding: 0 12px; font-size: 12px; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; z-index: 2; }
-.md-bar.md-first { border-radius: 16px 0 0 16px; }
-.md-bar.md-last { border-radius: 0 16px 16px 0; }
-.md-bar.md-first.md-last { border-radius: 16px; }
-.md-bar:not(.md-first):not(.md-last) { border-radius: 0; }
 
 /* EVENT MODALS */
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.38); backdrop-filter: blur(5px); z-index: 500; align-items: flex-end; justify-content: center; }
@@ -424,7 +410,6 @@ header {
       <div class="day-label">Sat</div>
     </div>
     <div class="grid" id="calGrid"></div>
-    <div class="md-overlay" id="mdOverlay"></div>
   </div>
 </div>
 
@@ -815,9 +800,6 @@ function handlePinComplete() {
 // ── APP ──
 const today = new Date();
 let viewYear=2026, viewMonth=6, editingId=null, events=[];
-let currentMonthCells = [];
-let overlayRAF = null;
-const multiDayMargin = 3;
 
 function initApp() {
   const color = getPersonColor(meIdx);
@@ -880,7 +862,6 @@ function renderMonth() {
   for(let d=1;d<=daysInMo;d++) cells.push({d,m:viewMonth,y:viewYear,other:false});
   while(cells.length%7!==0) cells.push({d:cells.length-firstDay-daysInMo+1,m:viewMonth+1,y:viewYear,other:true});
 
-  currentMonthCells = cells;
   cells.forEach(cell=>{
     const ry=cell.m<0?cell.y-1:(cell.m>11?cell.y+1:cell.y);
     const rm=((cell.m%12)+12)%12;
@@ -892,138 +873,49 @@ function renderMonth() {
     div.onclick=()=>openAdd(ds);
     const num=document.createElement('div');
     num.className='day-num'; num.textContent=cell.d;
-    const singleDayEvs = events.filter(e=>{
+    const cellEvs = events.filter(e=>{
       const date = getEventDate(e);
       const s = getEventStart(e);
       const en = getEventEnd(e);
-      return date===ds && !(s && en && s<en && ds>=s && ds<=en);
-    }).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
+      return date===ds || (s && en && s<en && ds>=s && ds<=en);
+    }).sort((a,b)=>{
+      const aStart = getEventStart(a); const bStart = getEventStart(b);
+      if(aStart !== bStart) return aStart.localeCompare(bStart);
+      return (a.time||'').localeCompare(b.time||'');
+    });
 
     // Append day number first so it stays at the top of the cell
     div.appendChild(num);
 
-    // Render single-day event pills only
-    singleDayEvs.slice(0,3).forEach(ev=>{
+    // Render unified event pills for both single-day and multi-day spans
+    cellEvs.slice(0,3).forEach(ev=>{
+      const date = getEventDate(ev);
+      const s = getEventStart(ev);
+      const en = getEventEnd(ev);
+      const isContinuation = !(date===ds) && s && en && s<en && ds>=s && ds<=en;
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
-      pill.className='event-pill';
+      pill.className='event-pill' + (isContinuation ? ' continuation' : '');
       const [r,g,b]=hexToRgb(color);
       const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       pill.style.background = pastel;
       pill.style.color = color;
-      pill.textContent = ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
+      pill.textContent = isContinuation ? '' : ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
-    if(singleDayEvs.length>3){
+    if(cellEvs.length>3){
       const more=document.createElement('div');
       more.className='more-tag';
-      more.textContent=`+${singleDayEvs.length-3} more`;
+      more.textContent=`+${cellEvs.length-3} more`;
       more.onclick=e=>{e.stopPropagation();openDayEvents(ds);};
       div.appendChild(more);
     }
     grid.appendChild(div);
   });
-  scheduleMultiDayOverlay();
 }
 
-function scheduleMultiDayOverlay(){
-  if(overlayRAF) cancelAnimationFrame(overlayRAF);
-  overlayRAF = requestAnimationFrame(()=>renderMultiDayOverlay(currentMonthCells));
-}
 
-window.addEventListener('resize',()=>scheduleMultiDayOverlay());
-
-function renderMultiDayOverlay(cells) {
-  const overlay=document.getElementById('mdOverlay');
-  overlay.innerHTML='';
-  const calWrap=document.querySelector('.cal-wrap');
-  const grid=document.getElementById('calGrid');
-  const calRect=calWrap.getBoundingClientRect();
-  const cellEls=Array.from(grid.querySelectorAll('.day-cell'));
-  if(!cellEls.length) return false;
-
-  const multiDayEvents = events.filter(e=>{
-    const s = getEventStart(e); const en = getEventEnd(e);
-    return s && en && s<en && cells.some(c=>{
-      const ry=c.m<0?c.y-1:(c.m>11?c.y+1:c.y);
-      const rm=((c.m%12)+12)%12;
-      const ds=`${ry}-${String(rm+1).padStart(2,'0')}-${String(c.d).padStart(2,'0')}`;
-      return ds>=s && ds<=en;
-    });
-  }).sort((a,b)=>{
-    const aStart=getEventStart(a), bStart=getEventStart(b);
-    if(aStart!==bStart) return aStart.localeCompare(bStart);
-    return (a.title||'').localeCompare(b.title||'');
-  });
-  if(!multiDayEvents.length) return false;
-
-  const barHeight = 20;
-  const stackedBarOffset = 4;
-
-  multiDayEvents.forEach((ev,rowIndex)=>{
-    const s = getEventStart(ev); const en = getEventEnd(ev);
-    const firstIntersect = cells.findIndex(c=>c.ds>=s);
-    const lastIntersect = (()=>{ for(let i=cells.length-1;i>=0;i--){ if(cells[i].ds<=en) return i; } return -1; })();
-    if(firstIntersect===-1||lastIntersect===-1||firstIntersect>lastIntersect) return;
-    const startRow=Math.floor(firstIntersect/7);
-    const endRow=Math.floor(lastIntersect/7);
-    for(let row=startRow;row<=endRow;row++){
-      const rowStart = row*7;
-      const segStart = row===startRow ? firstIntersect - rowStart : 0;
-      const segEnd = row===endRow ? lastIntersect - rowStart : 6;
-      const firstCell = cellEls[rowStart + segStart];
-      const lastCell = cellEls[rowStart + segEnd];
-      if(!firstCell || !lastCell) continue;
-      const startRect = firstCell.getBoundingClientRect();
-      const endRect = lastCell.getBoundingClientRect();
-      const numEl = firstCell.querySelector('.day-num');
-      const dateNumberHeight = numEl ? numEl.getBoundingClientRect().height : 24;
-      const left = startRect.left - calRect.left;
-      const right = endRect.right - calRect.left;
-      const top = startRect.top - calRect.top + dateNumberHeight + 6;
-      const width = right - left + (segEnd - segStart) * multiDayMargin;
-      const bar=document.createElement('div');
-      bar.className='md-bar';
-      if(row===startRow) bar.classList.add('md-first');
-      if(row===endRow) bar.classList.add('md-last');
-      bar.style.left = `${left}px`;
-      bar.style.top = `${top + rowIndex * (barHeight + stackedBarOffset)}px`;
-      bar.style.width = `${width}px`;
-      bar.style.height = `${barHeight}px`;
-      bar.style.background = getPersonColor(ev.person);
-      bar.style.color = '#ffffff';
-      bar.textContent = row===startRow ? ev.title : '';
-      overlay.appendChild(bar);
-    }
-  });
-  return true;
-}
-
-function renderMultiDayFallback(cells){
-  const eventsToShow = events.filter(e=>{
-    const s = getEventStart(e); const en = getEventEnd(e);
-    return s && en && s<en;
-  });
-  console.log('Using fallback multi-day rendering for', eventsToShow.length, 'events');
-  eventsToShow.forEach(ev=>{
-    const s=getEventStart(ev); const en=getEventEnd(ev);
-    cells.forEach(cell=>{
-      if(cell.ds>=s && cell.ds<=en){
-        const color=getPersonColor(ev.person);
-        const pill=document.createElement('div');
-        pill.className='event-pill';
-        const [r,g,b]=hexToRgb(color);
-        const pastel=`rgb(${Math.round(r+(255-r)*0.85)}, ${Math.round(g+(255-g)*0.85)}, ${Math.round(b+(255-b)*0.85)})`;
-        pill.style.background=pastel;
-        pill.style.color=color;
-        pill.textContent = cell.ds===s ? ev.title : '';
-        pill.onclick=e=>{ e.stopPropagation(); openDetail(ev.id); };
-        document.querySelector(`[data-ds='${cell.ds}']`)?.appendChild(pill);
-      }
-    });
-  });
-}
 
 window.changeMonth=function(d){viewMonth+=d;if(viewMonth>11){viewMonth=0;viewYear++;}if(viewMonth<0){viewMonth=11;viewYear--;}renderMonth();};
 window.goToday=function(){viewYear=today.getFullYear();viewMonth=today.getMonth();renderMonth();};
