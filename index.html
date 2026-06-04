@@ -899,7 +899,7 @@ function renderMonth() {
       const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       pill.style.background = pastel;
       pill.style.color = color;
-      pill.textContent = isContinuation ? '' : ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
+      const t=ev.title.length>6?ev.title.slice(0,6)+'…':ev.title; pill.textContent = isContinuation ? '' : t;
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
