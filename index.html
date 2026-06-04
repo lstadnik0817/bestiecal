@@ -364,7 +364,28 @@ header {
 <!-- MAIN APP -->
 <div id="app">
   <header>
-    <div class="logo">📅 <span style="color:var(--text)">🤍</span>&nbsp;<span style="color:#c4a0aa">Bestie</span><span style="color:var(--text)">CaL 🤍</span></div>
+    <div class="logo">
+      <!-- custom inline calendar SVG 28x28 -->
+      <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:6px;">
+        <!-- outer rounded rect -->
+        <rect x="1" y="1" width="26" height="26" rx="5" fill="#ffffff" stroke="#e4dac2"/>
+        <!-- dark header bar -->
+        <rect x="4" y="3" width="20" height="5" rx="1" fill="#3a3530" />
+        <!-- pink ring-hooks -->
+        <rect x="7" y="0.8" width="2" height="4" rx="1" fill="#c4a0aa" />
+        <rect x="19" y="0.8" width="2" height="4" rx="1" fill="#c4a0aa" />
+        <!-- grid of 6 small rounded squares -->
+        <!-- row 1 -->
+        <rect x="6" y="10" width="4" height="4" rx="1" fill="#c4a0aa" />
+        <rect x="12" y="10" width="4" height="4" rx="1" fill="#e4dac2" />
+        <rect x="18" y="10" width="4" height="4" rx="1" fill="#e4dac2" />
+        <!-- row 2 -->
+        <rect x="6" y="16" width="4" height="4" rx="1" fill="#e4dac2" />
+        <rect x="12" y="16" width="4" height="4" rx="1" fill="#e4dac2" />
+        <rect x="18" y="16" width="4" height="4" rx="1" fill="#e4dac2" />
+      </svg>
+      <span style="color:var(--text)">🤍</span>&nbsp;<span style="color:#c4a0aa">Bestie</span><span style="color:var(--text)">CaL 🤍</span>
+    </div>
     <div class="header-right">
       <div class="me-badge" id="meBadge" onclick="switchIdentity()">
         <div class="me-dot" id="meDot"></div>
