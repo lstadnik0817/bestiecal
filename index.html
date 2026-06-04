@@ -199,7 +199,8 @@ header {
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .day-num { font-size: 12px; font-weight: 600; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
-.event-pill { font-size: 10px; font-weight: 600; padding: 1px 3px; border-radius: 6px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; min-width: 8ch; }
+.event-pill { font-size: 10px; font-weight: 600; padding: 4px 6px; border-radius: 6px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; min-width: 8ch; }
+.event-pill.continuation { padding: 8px 0; min-width: 100%; border-radius: 6px; }
 .pill-dot { display: none; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
@@ -496,11 +497,13 @@ function hexToRgb(hex) {
   return [r,g,b];
 }
 function getEventStart(ev){ return ev.startDate||ev.start||ev.date; }
-function getEventEnd(ev){ return ev.endDate||ev.end||ev.date; }
+function getEventEnd(ev){ return ev.endDate||ev.end||ev.date||ev.start||ev.startDate; }
+function getEventDate(ev){ return ev.date||ev.startDate||ev.start; }
 function normalizeEvent(ev){
   const start = getEventStart(ev);
   const end = getEventEnd(ev);
-  return { ...ev, startDate:start, endDate:end, start, end, date:ev.date||start };
+  const date = ev.date||ev.startDate||ev.start;
+  return { ...ev, startDate:start, endDate:end, start, end, date };
 }
 function colorDistance(h1, h2) {
   const [r1,g1,b1] = hexToRgb(h1), [r2,g2,b2] = hexToRgb(h2);
@@ -879,9 +882,11 @@ function renderMonth() {
     const num=document.createElement('div');
     num.className='day-num'; num.textContent=cell.d;
     const cellEvs = events.filter(e=>{
-      const s = getEventStart(e); const en = getEventEnd(e);
-      if(!s || !en) return false;
-      return (s===en && s===ds) || (s<en && ds>=s && ds<=en);
+      const date = getEventDate(e);
+      const s = getEventStart(e);
+      const en = getEventEnd(e);
+      if(date===ds) return true;
+      return s && en && s<en && ds>=s && ds<=en;
     }).sort((a,b)=>{
       const aStart = getEventStart(a); const bStart = getEventStart(b);
       if(aStart !== bStart) return aStart.localeCompare(bStart);
@@ -895,14 +900,15 @@ function renderMonth() {
     cellEvs.slice(0,3).forEach(ev=>{
       const s = getEventStart(ev); const en = getEventEnd(ev);
       const isSpan = s < en;
+      const isFirstDay = ds === s;
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
-      pill.className='event-pill'+(isSpan && ds!==s ? ' continuation' : '');
+      pill.className='event-pill'+(isSpan && !isFirstDay ? ' continuation' : '');
       const [r,g,b]=hexToRgb(color);
       const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       pill.style.background = pastel;
       pill.style.color = color;
-      pill.textContent = ds===s ? ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '') : (ds===en ? ev.title : '•');
+      pill.textContent = isFirstDay ? ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '') : '';
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
@@ -915,9 +921,6 @@ function renderMonth() {
     }
     grid.appendChild(div);
   });
-  if(!renderMultiDayOverlay(cells)){
-    renderMultiDayFallback(cells);
-  }
 }
 
 function renderMultiDayOverlay(cells) {
