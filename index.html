@@ -204,10 +204,10 @@ header {
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
 /* Multi-day event bar */
-.md-bar { height: 18px; display: flex; align-items: center; padding: 2px 6px; font-size: 11px; font-weight: 700; color: #fff; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-bottom: 6px; }
-.md-first { border-radius: 6px 0 0 6px; }
+.md-bar { height: 18px; display: flex; align-items: center; padding: 2px 6px; font-size: 11px; font-weight: 700; color: inherit; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; margin-top: 4px; margin-bottom: 4px; }
+.md-first { border-radius: 6px 6px 0 0; }
 .md-middle { border-radius: 0; }
-.md-last { border-radius: 0 6px 6px 0; }
+.md-last { border-radius: 0 0 6px 6px; }
 
 /* EVENT MODALS */
 .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.38); backdrop-filter: blur(5px); z-index: 500; align-items: flex-end; justify-content: center; }
@@ -876,23 +876,26 @@ function renderMonth() {
       const s = e.start||e.date; const en = e.end||e.date; return s===en && s===ds;
     }).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
 
-    // Render multi-day bars at the top
+    // Append day number first so it stays at the top of the cell
+    div.appendChild(num);
+
+    // Render multi-day bars below the date number
     multiEvs.forEach(ev=>{
       const color=getPersonColor(ev.person);
+      const [r,g,b]=hexToRgb(color);
+      const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       const bar=document.createElement('div');
       bar.className='md-bar';
       const s = ev.start||ev.date; const en = ev.end||ev.date;
       if (ds===s) bar.classList.add('md-first');
       else if (ds===en) bar.classList.add('md-last');
       else bar.classList.add('md-middle');
-      bar.style.background = color;
+      bar.style.background = pastel;
+      bar.style.color = color;
       bar.textContent = ev.title;
       bar.onclick = e=>{ e.stopPropagation(); openDetail(ev.id); };
       div.appendChild(bar);
     });
-
-    // Append day number after bars
-    div.appendChild(num);
 
     // Render single-day event pills
     singleEvs.slice(0,3).forEach(ev=>{
