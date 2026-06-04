@@ -495,6 +495,13 @@ function hexToRgb(hex) {
   const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
   return [r,g,b];
 }
+function getEventStart(ev){ return ev.startDate||ev.start||ev.date; }
+function getEventEnd(ev){ return ev.endDate||ev.end||ev.date; }
+function normalizeEvent(ev){
+  const start = getEventStart(ev);
+  const end = getEventEnd(ev);
+  return { ...ev, startDate:start, endDate:end, start, end, date:ev.date||start };
+}
 function colorDistance(h1, h2) {
   const [r1,g1,b1] = hexToRgb(h1), [r2,g2,b2] = hexToRgb(h2);
   return Math.sqrt((r1-r2)**2 + (g1-g2)**2 + (b1-b2)**2);
@@ -834,7 +841,8 @@ function startLiveSync() {
   const q=query(collection(db,'events'));
   onSnapshot(q, snapshot=>{
     events=[];
-    snapshot.forEach(d=>events.push({id:d.id,...d.data()}));
+    snapshot.forEach(d=>events.push(normalizeEvent({id:d.id,...d.data()})));
+    console.log('Loaded events', events);
     syncDot.className='sync-dot live';
     syncText.textContent='Live • updates instantly';
     renderMonth(); buildLegend();
@@ -865,11 +873,12 @@ function renderMonth() {
     const isToday=!cell.other&&ry===today.getFullYear()&&rm===today.getMonth()&&cell.d===today.getDate();
     const div=document.createElement('div');
     div.className='day-cell'+(cell.other?' other-month':'')+(isToday?' today':'');
+    div.dataset.ds = ds;
     div.onclick=()=>openAdd(ds);
     const num=document.createElement('div');
     num.className='day-num'; num.textContent=cell.d;
     const singleEvs = events.filter(e=>{
-      const s = e.start||e.date; const en = e.end||e.date; return s===en && s===ds;
+      const s = getEventStart(e); const en = getEventEnd(e); return s===en && s===ds;
     }).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
 
     // Append day number first so it stays at the top of the cell
@@ -898,7 +907,9 @@ function renderMonth() {
     }
     grid.appendChild(div);
   });
-  renderMultiDayOverlay(cells);
+  if(!renderMultiDayOverlay(cells)){
+    renderMultiDayFallback(cells);
+  }
 }
 
 function renderMultiDayOverlay(cells) {
@@ -912,12 +923,16 @@ function renderMultiDayOverlay(cells) {
   const gridTop=gridRect.top - calRect.top;
   const cellWidth = gridRect.width / 7;
   const rowHeight = 70 + 3;
+  if(!gridRect.width || cellWidth <= 0 || rowHeight <= 0) return false;
 
-  events.filter(e=>{
-    const s = e.start||e.date; const en = e.end||e.date;
-    return s<en && cells.some(c=>c.ds>=s && c.ds<=en);
-  }).forEach(ev=>{
-    const s = ev.start||ev.date; const en = ev.end||ev.date;
+  const multiDayEvents = events.filter(e=>{
+    const s = getEventStart(e); const en = getEventEnd(e);
+    return s && en && s<en && cells.some(c=>c.ds>=s && c.ds<=en);
+  });
+  console.log('Rendering multi-day overlay', multiDayEvents, 'cells', cells.length);
+  if(!multiDayEvents.length){ return false; }
+  multiDayEvents.forEach(ev=>{
+    const s = getEventStart(ev); const en = getEventEnd(ev);
     const firstIntersect = cells.findIndex(c=>c.ds>=s);
     const lastIntersect = (()=>{ for(let i=cells.length-1;i>=0;i--){ if(cells[i].ds<=en) return i; } return -1; })();
     if(firstIntersect===-1||lastIntersect===-1||firstIntersect>lastIntersect) return;
@@ -942,6 +957,32 @@ function renderMultiDayOverlay(cells) {
       bar.textContent = row===startRow ? ev.title : '';
       overlay.appendChild(bar);
     }
+  });
+  return true;
+}
+
+function renderMultiDayFallback(cells){
+  const eventsToShow = events.filter(e=>{
+    const s = getEventStart(e); const en = getEventEnd(e);
+    return s && en && s<en;
+  });
+  console.log('Using fallback multi-day rendering for', eventsToShow.length, 'events');
+  eventsToShow.forEach(ev=>{
+    const s=getEventStart(ev); const en=getEventEnd(ev);
+    cells.forEach(cell=>{
+      if(cell.ds>=s && cell.ds<=en){
+        const color=getPersonColor(ev.person);
+        const pill=document.createElement('div');
+        pill.className='event-pill';
+        const [r,g,b]=hexToRgb(color);
+        const pastel=`rgb(${Math.round(r+(255-r)*0.85)}, ${Math.round(g+(255-g)*0.85)}, ${Math.round(b+(255-b)*0.85)})`;
+        pill.style.background=pastel;
+        pill.style.color=color;
+        pill.textContent = cell.ds===s ? ev.title : '';
+        pill.onclick=e=>{ e.stopPropagation(); openDetail(ev.id); };
+        document.querySelector(`[data-ds='${cell.ds}']`)?.appendChild(pill);
+      }
+    });
   });
 }
 
@@ -974,7 +1015,7 @@ window.saveEvent=async function(){
   if(!title){showToast('Please add a title!');return;}
   if(!start||!end){showToast('Please pick start and end dates!');return;}
   if(end<start){showToast('End date must be the same or after start date');return;}
-  const evData={title,start,end,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
+  const evData={title,start,end,startDate:start,endDate:end,date:start,time:document.getElementById('evTime').value,notes:document.getElementById('evNotes').value.trim(),person:editingId?events.find(e=>e.id===editingId)?.person??meIdx:meIdx,updatedAt:Date.now()};
   try{
     if(editingId){await updateDoc(doc(db,'events',editingId),evData);showToast('Updated ✓');}
     else{await addDoc(collection(db,'events'),evData);showToast('Event added ✓');}
@@ -992,7 +1033,7 @@ window.openDetail=function(id){
   if(!ev)return;
   const color=getPersonColor(ev.person);
   const canEdit=ev.person===meIdx;
-  let start = ev.start||ev.date; let end = ev.end||ev.date;
+  let start = getEventStart(ev); let end = getEventEnd(ev);
   let html=`<div class="ev-color-strip" style="background:${color}"></div><div style="font-size:14px;line-height:1.75">`;
   html+=`<div class="ev-title-lg">${ev.title}</div>`;
   if(start===end) html+=`<div>📅 <strong>${fmtDate(start)}</strong>${ev.time?' at '+fmtTime(ev.time):''}</div>`;
@@ -1015,8 +1056,8 @@ window.openEditModal=function(id){
   const color=getPersonColor(ev.person);
   document.getElementById('addModalTitle').textContent='Edit Event';
   document.getElementById('evTitle').value=ev.title;
-  document.getElementById('evStartDate').value=ev.start||ev.date||'';
-  document.getElementById('evEndDate').value=ev.end||ev.date||'';
+  document.getElementById('evStartDate').value=getEventStart(ev)||'';
+  document.getElementById('evEndDate').value=getEventEnd(ev)||'';
   document.getElementById('evTime').value=ev.time||'';
   document.getElementById('evNotes').value=ev.notes||'';
   const bar=document.getElementById('addingAsBar');
