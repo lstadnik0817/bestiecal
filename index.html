@@ -199,8 +199,13 @@ header {
 .day-cell.other-month { background: rgba(255,255,255,.45); opacity: .5; }
 .day-cell.today .day-num { background: var(--text); color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
 .day-num { font-size: 12px; font-weight: 600; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-bottom: 3px; }
-.event-pill { font-size: 10px; font-weight: 600; padding: 4px 6px; border-radius: 6px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; min-width: 8ch; }
-.event-pill.continuation { padding: 8px 0; min-width: 100%; border-radius: 6px; }
+.event-pill { font-size: 10px; font-weight: 600; padding: 4px 6px; border-radius: 6px; margin: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; display: block; width: 100%; box-sizing: border-box; color: inherit; }
+.event-pill.multi-day { padding: 6px 10px; min-height: 28px; display: flex; align-items: center; }
+.event-pill.multi-day.first { border-radius: 6px 0 0 6px; }
+.event-pill.multi-day.last { border-radius: 0 6px 6px 0; }
+.event-pill.multi-day.first.last { border-radius: 6px; }
+.event-pill.multi-day:not(.first):not(.last) { border-radius: 0; }
+.event-pill.multi-day:not(.first) { padding-left: 0; }
 .pill-dot { display: none; }
 .more-tag { font-size: 9.5px; color: var(--muted); padding: 1px 3px; cursor: pointer; }
 
@@ -870,6 +875,22 @@ function renderMonth() {
   for(let d=1;d<=daysInMo;d++) cells.push({d,m:viewMonth,y:viewYear,other:false});
   while(cells.length%7!==0) cells.push({d:cells.length-firstDay-daysInMo+1,m:viewMonth+1,y:viewYear,other:true});
 
+  const monthMultiEvents = events.filter(e=>{
+    const s = getEventStart(e); const en = getEventEnd(e);
+    return s && en && s<en && cells.some(c=>{
+      const ry=c.m<0?c.y-1:(c.m>11?c.y+1:c.y);
+      const rm=((c.m%12)+12)%12;
+      const ds=`${ry}-${String(rm+1).padStart(2,'0')}-${String(c.d).padStart(2,'0')}`;
+      return ds>=s && ds<=en;
+    });
+  }).sort((a,b)=>{
+    const aStart=getEventStart(a), bStart=getEventStart(b);
+    if(aStart!==bStart) return aStart.localeCompare(bStart);
+    return (a.title||'').localeCompare(b.title||'');
+  });
+  const multiEventRow = {};
+  monthMultiEvents.forEach((ev,i)=>multiEventRow[ev.id]=i);
+
   cells.forEach(cell=>{
     const ry=cell.m<0?cell.y-1:(cell.m>11?cell.y+1:cell.y);
     const rm=((cell.m%12)+12)%12;
@@ -881,41 +902,55 @@ function renderMonth() {
     div.onclick=()=>openAdd(ds);
     const num=document.createElement('div');
     num.className='day-num'; num.textContent=cell.d;
-    const cellEvs = events.filter(e=>{
+    const multiDayEvs = monthMultiEvents.filter(ev=>{
+      const s = getEventStart(ev); const en = getEventEnd(ev);
+      return ds>=s && ds<=en;
+    }).sort((a,b)=>multiEventRow[a.id]-multiEventRow[b.id]);
+    const singleDayEvs = events.filter(e=>{
       const date = getEventDate(e);
       const s = getEventStart(e);
       const en = getEventEnd(e);
-      if(date===ds) return true;
-      return s && en && s<en && ds>=s && ds<=en;
-    }).sort((a,b)=>{
-      const aStart = getEventStart(a); const bStart = getEventStart(b);
-      if(aStart !== bStart) return aStart.localeCompare(bStart);
-      return (a.time||'').localeCompare(b.time||'');
-    });
+      return date===ds && !(s && en && s<en && ds>=s && ds<=en);
+    }).sort((a,b)=>(a.time||'').localeCompare(b.time||''));
 
     // Append day number first so it stays at the top of the cell
     div.appendChild(num);
 
-    // Render day event pills, including multi-day spans
-    cellEvs.slice(0,3).forEach(ev=>{
+    // Render multi-day bars above single-day events
+    multiDayEvs.forEach(ev=>{
       const s = getEventStart(ev); const en = getEventEnd(ev);
-      const isSpan = s < en;
       const isFirstDay = ds === s;
+      const isLastDay = ds === en;
+      const color=getPersonColor(ev.person);
+      const bar=document.createElement('div');
+      bar.className='event-pill multi-day'+(isFirstDay?' first':'')+(isLastDay?' last':'');
+      const [r,g,b]=hexToRgb(color);
+      const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
+      bar.style.background = pastel;
+      bar.style.color = color;
+      bar.textContent = isFirstDay ? ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '') : '';
+      bar.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
+      div.appendChild(bar);
+    });
+
+    // Render single-day event pills below multi-day bars
+    singleDayEvs.slice(0,3).forEach(ev=>{
       const color=getPersonColor(ev.person);
       const pill=document.createElement('div');
-      pill.className='event-pill'+(isSpan && !isFirstDay ? ' continuation' : '');
+      pill.className='event-pill';
       const [r,g,b]=hexToRgb(color);
       const pastel = `rgb(${Math.round(r + (255-r)*0.85)}, ${Math.round(g + (255-g)*0.85)}, ${Math.round(b + (255-b)*0.85)})`;
       pill.style.background = pastel;
       pill.style.color = color;
-      pill.textContent = isFirstDay ? ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '') : '';
+      pill.textContent = ev.title + (ev.time ? ' · '+fmtTimePill(ev.time) : '');
       pill.onclick=e=>{e.stopPropagation();openDetail(ev.id);};
       div.appendChild(pill);
     });
-    if(cellEvs.length>3){
+    const totalEvs = multiDayEvs.length + singleDayEvs.length;
+    if(totalEvs > 3){
       const more=document.createElement('div');
       more.className='more-tag';
-      more.textContent=`+${cellEvs.length-3} more`;
+      more.textContent=`+${totalEvs-3} more`;
       more.onclick=e=>{e.stopPropagation();openDayEvents(ds);};
       div.appendChild(more);
     }
